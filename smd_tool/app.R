@@ -1,12 +1,18 @@
 
 
 library(shiny)
+library(bslib)
+library(tidyverse)
+library(tableone)
 
 # Define UI for data upload app ----
 ui <- fluidPage(
   
   # App title ----
   titlePanel("Uploading Files"),
+  theme = bs_theme(
+    bootswatch = "journal"
+  ),
   
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -35,11 +41,7 @@ ui <- fluidPage(
                    selected = ","),
       
       # Input: Select quotes ----
-      radioButtons("quote", "Quote",
-                   choices = c(None = "",
-                               "Double Quote" = '"',
-                               "Single Quote" = "'"),
-                   selected = '"'),
+      textInput("gr", "Grouping variable"),
       
       # Horizontal line ----
       tags$hr(),
@@ -63,6 +65,8 @@ ui <- fluidPage(
   )
 )
 
+thematic::thematic_shiny(font = "auto")
+
 # Define server logic to read selected file ----
 server <- function(input, output) {
   
@@ -80,8 +84,8 @@ server <- function(input, output) {
       {
         df <- read.csv(input$file1$datapath,
                        header = input$header,
-                       sep = input$sep,
-                       quote = input$quote)
+                       sep = input$sep
+                       )
       },
       error = function(e) {
         # return a safeError if a parsing error occurs
@@ -90,7 +94,20 @@ server <- function(input, output) {
     )
     
     if(input$disp == "head") {
-      return(head(df))
+      
+      # RESULT ----
+      
+      
+      
+      myVars <- df %>% select(-input$gr) %>% colnames
+      
+      res <- CreateTableOne(vars = myVars, strata = "gr" , data = df)
+      res1 <- print(res, smd = TRUE) %>% 
+        as.data.frame() %>% 
+        rownames_to_column()
+      
+      
+      return(res1)
     }
     else {
       return(df)
